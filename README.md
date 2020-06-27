@@ -14,3 +14,5 @@ The dependencies are:
   - matplotlib
 
 Some of those are probably dependant on other ones, I'm not particularly familiar with the necessary order of installation.
+
+Simply download the whole package and follow along the instructions located in the Glaciers_test_case.py file
