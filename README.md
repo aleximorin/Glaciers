@@ -1,2 +1,16 @@
 # Glaciers
 Simple python library to easily compare glacier thickness data and models
+
+Created by Alexi Morin, 2020, USRA summer project
+
+The Glacier and Model objects are extensively described in the Glaciers.py python script.
+
+The dependencies are:
+  - rasterio
+  - geopandas
+  - shapely
+  - numpy
+  - pandas
+  - matplotlib
+
+Some of those are probably dependant on other ones, I'm not particularly familiar with the necessary order of installation.
