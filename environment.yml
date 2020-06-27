@@ -1,0 +1,12 @@
+name: Glacier
+channels:
+  - defaults
+dependencies:
+  - python=3.7
+  - gdal
+  - shapely
+  - geopandas
+  - rasterio
+  - m2w64-toolchain
+prefix: C:\ProgramData\Anaconda3\envs\Glacier
+
