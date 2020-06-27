@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.colors import Normalize
-from inversion.qgis_functions import *
+from glacier_functions import *
 import matplotlib.patches as patches
 import os
 from dataclasses import dataclass
