@@ -1,4 +1,5 @@
 # Ignore the output sfolder
+glate_output/
 Glacier_plot_folder/
 Glacier_test_case/glate_farinotti_consensus.tif
 
