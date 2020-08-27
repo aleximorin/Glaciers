@@ -1,0 +1,28 @@
+name: pyGM
+channels:
+  - conda-forge
+dependencies:
+  # Core requirements
+  - python=3.7
+  # Additional libraries (alphabetical order)
+  - astropy
+  - cartopy
+  - descartes
+  - fiona
+  - gdal
+  - geopandas
+  - matplotlib-scalebar
+  - numba
+  - numpy
+  - pandas
+  - pip
+  - pyepsg
+  - pyproj
+  - pyshp
+  - rasterio
+  - rasterstats
+  - scikit-image
+  - scipy
+  - seaborn
+  - shapely
+  - xarray
