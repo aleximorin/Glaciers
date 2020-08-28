@@ -9,14 +9,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.colors import Normalize
-from pyGM.pyGM_funcs import *
+from pyGM_funcs import *
 import matplotlib.patches as patches
 import os
 from dataclasses import dataclass
 from typing import List
 from rasterio.mask import mask, geometry_mask
-from pyGM.pyGM_funcs import df_dict_to_excel, resize_ras_to_target, \
-    crop_image_to_geometry, crop_raster_to_geometry, points_to_raster
+
 import matplotlib.patheffects as pe
 from matplotlib.ticker import MaxNLocator
 import alphashape
@@ -309,99 +308,99 @@ class Glacier:
         fig2.savefig(f'{self.img_folder}/transects_map.png')
 
     def plot_transects_from_rasters(self, models, transects_path, field_name, merge=False, interp_field=None,
-                                           point_dist=1000, text_color='black', showplot=False, simplify=None):
+                                    point_dist=1000, text_color='black', showplot=False, simplify=None):
 
-            if isinstance(transects_path, str):
-                transects = gpd.read_file(transects_path)
-            else:
-                transects = transects_path
+        if isinstance(transects_path, str):
+            transects = gpd.read_file(transects_path)
+        else:
+            transects = transects_path
 
-            @dataclass
-            class Line:
-                ref: str
-                geometry: geom.MultiLineString
+        @dataclass
+        class Line:
+            ref: str
+            geometry: geom.MultiLineString
 
-            # Merge lines having the same field
-            if merge:
-                field_values = np.sort(transects[field_name].unique())
-                lines = [transects[transects[field_name] == i].unary_union for i in field_values]
-                lines = [Line(i, j) for i, j in zip(field_values, lines)]
-            else:
-                lines = [Line(i, j) for i, j in zip(transects.index.to_list(), transects.geometry)]
+        # Merge lines having the same field
+        if merge:
+            field_values = np.sort(transects[field_name].unique())
+            lines = [transects[transects[field_name] == i].unary_union for i in field_values]
+            lines = [Line(i, j) for i, j in zip(field_values, lines)]
+        else:
+            lines = [Line(i, j) for i, j in zip(transects.index.to_list(), transects.geometry)]
 
-            nrows = len(lines)
-            ncols = 1
-            for i in range(1, nrows):
-                if nrows % i == 0:
-                    ncols = i
+        nrows = len(lines)
+        ncols = 1
+        for i in range(1, nrows):
+            if nrows % i == 0:
+                ncols = i
 
-            nrows = int(nrows / ncols)
+        nrows = int(nrows / ncols)
 
-            fig, axs = plt.subplots(nrows, ncols)
+        fig, axs = plt.subplots(nrows, ncols)
 
-            for line, ax in zip(lines, axs.flatten()):
+        for line, ax in zip(lines, axs.flatten()):
 
-                if isinstance(line.geometry, geom.MultiLineString):
-                    line.geometry = ops.linemerge(
-                        [geom.LineString(tuple(map(tuple, np.round(subline.xy, 4).transpose()))) for subline in
-                         line.geometry])
+            if isinstance(line.geometry, geom.MultiLineString):
+                line.geometry = ops.linemerge(
+                    [geom.LineString(tuple(map(tuple, np.round(subline.xy, 4).transpose()))) for subline in
+                     line.geometry])
 
-                if simplify is not None:
-                    line.geometry = line.geometry.simplify(simplify)
+            if simplify is not None:
+                line.geometry = line.geometry.simplify(simplify)
 
-                for model in models:
-                    indices, points = indices_along_line(line.geometry, model.thickness.shape, model.meta)
-                    h = model.thickness[indices]
-                    dists = cumulative_distances(*points)
-                    ax.plot(dists, h, label=model.name)
+            for model in models:
+                indices, points = indices_along_line(line.geometry, model.thickness.shape, model.meta)
+                h = model.thickness[indices]
+                dists = cumulative_distances(*points)
+                ax.plot(dists, h, label=model.name)
 
-                true_thickness = (model.thickness - model.error)[indices]
-                ax.plot(dists, true_thickness, label='Measurements')
-                ax.set_title(line.ref)
-                ax.invert_yaxis()
+            true_thickness = (model.thickness - model.error)[indices]
+            ax.plot(dists, true_thickness, label='Measurements')
+            ax.set_title(line.ref)
+            ax.invert_yaxis()
 
-            if ncols != 1:
-                plt.tight_layout(pad=3, h_pad=1, w_pad=1)
-            else:
-                plt.tight_layout()
-            handles, labels = axs.flatten()[-1].get_legend_handles_labels()
-            plt.legend(bbox_to_anchor=(0.5, -0), loc="lower center",
-                       borderaxespad=0, ncol=len(labels), bbox_transform=fig.transFigure, frameon=False)
+        if ncols != 1:
+            plt.tight_layout(pad=3, h_pad=1, w_pad=1)
+        else:
+            plt.tight_layout()
+        handles, labels = axs.flatten()[-1].get_legend_handles_labels()
+        plt.legend(bbox_to_anchor=(0.5, -0), loc="lower center",
+                   borderaxespad=0, ncol=len(labels), bbox_transform=fig.transFigure, frameon=False)
 
-            fig2 = plt.figure()
-            ax0 = plt.gca()
-            self.outline.plot(ax=ax0, facecolor='None', edgecolor='black')
-            self.plot_map(self.dem_im, ax=ax0, hillshade=True, alpha=0)
+        fig2 = plt.figure()
+        ax0 = plt.gca()
+        self.outline.plot(ax=ax0, facecolor='None', edgecolor='black')
+        self.plot_map(self.dem_im, ax=ax0, hillshade=True, alpha=0)
 
-            for line in lines:
-                n = int(np.floor(line.geometry.length / point_dist))
-                points = [line.geometry.interpolate(i * point_dist) for i in range(n + 1)]
-                x = [i.x for i in points]
-                y = [i.y for i in points]
-                """ u = np.diff(x)
+        for line in lines:
+            n = int(np.floor(line.geometry.length / point_dist))
+            points = [line.geometry.interpolate(i * point_dist) for i in range(n + 1)]
+            x = [i.x for i in points]
+            y = [i.y for i in points]
+            """ u = np.diff(x)
                 v = np.diff(y)
                 pos_x = x[:-1]
                 pos_y = y[:-1]
                 norm = np.sqrt(u ** 2 + v ** 2)
                 ax0.quiver(pos_x, pos_y, u / norm, v / norm, angles="xy", headwidth=1, width=0.005,
                            headlength=1, headaxislength=1, color='blue')"""
-                plt.scatter(x, y, c='blue')
+            plt.scatter(x, y, c='blue')
 
-                x, y = line.geometry.xy
-                ax0.plot(x, y, c='blue')
+            x, y = line.geometry.xy
+            ax0.plot(x, y, c='blue')
 
-                X, Y = np.array(line.geometry.centroid.xy)
-                label = line.ref
-                ax0.text(X, Y, label, c=text_color)
+            X, Y = np.array(line.geometry.centroid.xy)
+            label = line.ref
+            ax0.text(X, Y, label, c=text_color)
 
-            xmin, ymin, xmax, ymax = transects.total_bounds
-            ax0.set_xlim(xmin, xmax)
-            ax0.set_ylim(ymin, ymax)
-            if showplot:
-                plt.show()
+        xmin, ymin, xmax, ymax = transects.total_bounds
+        ax0.set_xlim(xmin, xmax)
+        ax0.set_ylim(ymin, ymax)
+        if showplot:
+            plt.show()
 
-            fig.savefig(f'{self.img_folder}/transects_rasters.png')
-            fig2.savefig(f'{self.img_folder}/transects_map_rasters.png')
+        fig.savefig(f'{self.img_folder}/transects_rasters.png')
+        fig2.savefig(f'{self.img_folder}/transects_map_rasters.png')
 
     def compute_volume(self, models, shape_path=None, shape_name='', save_df=False):
 
@@ -498,7 +497,7 @@ class Glacier:
         err = error.copy()
         err[ttim < 5] = np.nan
         ttim[ttim < 5] = np.nan
-        rel_error = 100 * err/ttim
+        rel_error = 100 * err / ttim
         model.thickness = im
         model.thickness_array = im[mask]
 
@@ -758,8 +757,17 @@ class Glacier:
 
     def plot_elevation(self, **kwargs):
         # Simple function call to plot the DEM
-        self.plot_map(self.dem_im, f'Surface elevation\n{self.name}',
-                      '[m]', 'elevation', 'terrain', outline=True, points=True, **kwargs)
+        self.plot_map(im=self.dem_im,
+                      cbar_unit='[m asl]',
+                      tag=f'elevation',
+                      outline=True,
+                      cmap='terrain',
+                      alpha=0.7,
+                      hillshade=True,
+                      ashape=True,
+                      ticks=True,
+                      labels=True,
+                      **kwargs)
 
     def scatterplot(self, model, title='', showplot=False,
                     figsize: tuple = None, ax=None, label=True, legend=True, nbins: int = 5,
